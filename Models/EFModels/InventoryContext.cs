@@ -44,6 +44,10 @@ namespace Pagination_API.Models.EFModels
                 entity.Property(e => e.Name)
                     .HasMaxLength(255)
                     .IsUnicode(false);
+
+                entity.Property(e => e.Price)
+                    .HasColumnType("decimal(10, 2)")
+                    .HasColumnName("price");
             });
 
             OnModelCreatingPartial(modelBuilder);

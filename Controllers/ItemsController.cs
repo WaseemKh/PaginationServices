@@ -18,10 +18,47 @@ namespace Pagination_API.Controllers
 
         [HttpGet]
         [Route("GetAllItems")]
-        public async Task<IActionResult> GetAllItems([FromQuery] QueryParameters query)
+        public async Task<IActionResult> GetAllItems([FromQuery] ItemQueryParameters query)
         {
-            IQueryable<Item> Items = _inventoryContext.Items.Skip(query.Size * (query.Page - 1)).Take(query.Size);
-            return Ok(await Items.ToArrayAsync());
+            if (query.Page < 1 || query.Size < 1)
+            {
+                return BadRequest("Invalid page or size parameter.");
+            }
+            IQueryable<Item> Items = _inventoryContext.Items.AsNoTracking();
+            if (query.MinPrice != null)
+            {
+                Items = Items.Where(x => x.Price >= query.MinPrice);
+            }
+            if (query.MaxPrice != null)
+            {
+                Items = Items.Where(x => x.Price <= query.MaxPrice);
+            }
+            var totalItems = await Items.CountAsync();
+            var items = await Items
+         .OrderBy(x => x.Id)
+         .Skip(query.Size * (query.Page - 1))
+         .Take(query.Size)
+         .ToArrayAsync();
+
+
+            var response = new PagedResponse<Item>
+            {
+                Data = items,
+                PageNumber = query.Page,
+                PageSize = query.Size,
+                TotalRecords = totalItems,
+                TotalPages = (int)Math.Ceiling((double)totalItems / query.Size)
+            };
+            return Ok(response);
+        }
+
+        public class PagedResponse<T>
+        {
+            public IEnumerable<T> Data { get; set; }
+            public int PageNumber { get; set; }
+            public int PageSize { get; set; }
+            public int TotalRecords { get; set; }
+            public int TotalPages { get; set; }
         }
 
         [HttpGet]
