@@ -62,26 +62,24 @@ namespace Pagination_API.Controllers
         }
 
         [HttpGet]
-        [Route("GetItemById")]
-        public async Task<IActionResult> GetItem(int Id)
+        [Route("GetItemById/{id}")]
+        public async Task<IActionResult> GetItem(int id)
         {
 
-            try
+           // var item = await _inventoryContext.Items.FindAsync(id);
+            var item = await _inventoryContext.Items.AsNoTracking().FirstOrDefaultAsync(x=>x.Id ==id);
+
+
+            if (item == null)
             {
-                Item item = _inventoryContext.Items.SingleOrDefault(x => x.Id == Id);
-
-                if (item == null)
-                {
-                    return Ok("No Data Found.");
-                }
-                return Ok(item);
-
+                return Ok("Item not found.");
             }
-            catch (Exception ex)
-            {
+            return Ok(item);
 
-                return BadRequest(ex.Message);
-            }
         }
+
+
+
     }
+
 }
