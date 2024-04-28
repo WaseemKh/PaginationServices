@@ -18,36 +18,71 @@ namespace Pagination_API.Controllers
 
         [HttpGet]
         [Route("GetAllItems")]
-        public async Task<IActionResult> GetAllItems([FromQuery] ItemQueryParameters query)
+        public async Task<IActionResult> GetAllItems([FromQuery] ItemQueryParameters queryParams)
         {
-            if (query.Page < 1 || query.Size < 1)
+
+            
+            if (queryParams.Size < 1)
             {
-                return BadRequest("Invalid page or size parameter.");
+                return BadRequest("Size parameter must be at least 1.");
             }
+
+           
+            if (queryParams.Page < 0)
+            {
+                return BadRequest("Page parameter must not be negative.");
+            }
+
+
+
+
             IQueryable<Item> Items = _inventoryContext.Items.AsNoTracking();
-            if (query.MinPrice != null)
+
+            if (queryParams.MinPrice != null)
             {
-                Items = Items.Where(x => x.Price >= query.MinPrice);
+                Items = Items.Where(x => x.Price >= queryParams.MinPrice);
             }
-            if (query.MaxPrice != null)
+            if (queryParams.MaxPrice != null)
             {
-                Items = Items.Where(x => x.Price <= query.MaxPrice);
+                Items = Items.Where(x => x.Price <= queryParams.MaxPrice);
+            }
+            if (!string.IsNullOrEmpty(queryParams.Barcode))
+            {
+                Items = Items.Where(x => x.Barcode == queryParams.Barcode);
+            }
+            if (!string.IsNullOrEmpty(queryParams.Name))
+            {
+                Items = Items.Where(x => x.Name.ToLower().Contains(queryParams.Name.ToLower()));
+
+            }
+
+            if (!string.IsNullOrEmpty(queryParams.SortBy))
+            {
+
+                if (typeof(Item).GetProperty(queryParams.SortBy) != null)
+                {
+                    Items = Items.OrderByCustom(
+                        queryParams.SortBy,
+                        queryParams.SortOrder);
+                }
             }
             var totalItems = await Items.CountAsync();
+            var skipAmount = queryParams.Page <= 1 ? 0 : queryParams.Size * (queryParams.Page - 1);
+
             var items = await Items
-         .OrderBy(x => x.Id)
-         .Skip(query.Size * (query.Page - 1))
-         .Take(query.Size)
+
+         .Skip(skipAmount)
+         .Take(queryParams.Size)
          .ToArrayAsync();
 
 
             var response = new PagedResponse<Item>
             {
                 Data = items,
-                PageNumber = query.Page,
-                PageSize = query.Size,
+                PageNumber = queryParams.Page,
+                PageSize = queryParams.Size,
                 TotalRecords = totalItems,
-                TotalPages = (int)Math.Ceiling((double)totalItems / query.Size)
+                TotalPages = (int)Math.Ceiling((double)totalItems / queryParams.Size)
             };
             return Ok(response);
         }
@@ -66,10 +101,8 @@ namespace Pagination_API.Controllers
         public async Task<IActionResult> GetItem(int id)
         {
 
-           // var item = await _inventoryContext.Items.FindAsync(id);
-            var item = await _inventoryContext.Items.AsNoTracking().FirstOrDefaultAsync(x=>x.Id ==id);
-
-
+            // var item = await _inventoryContext.Items.FindAsync(id);
+            var item = await _inventoryContext.Items.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             if (item == null)
             {
                 return Ok("Item not found.");
