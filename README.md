@@ -29,3 +29,10 @@ Run the provided SQL script to create the Inventory database and the Items table
 Scaffold-DbContext "Server=yourServerName;Database=Inventory;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models
 Remember to replace yourServerName with the actual name of your server.
 ### 5. Add-Migration InitialCreate
+
+
+Featuers
+### 1.Pagination 
+### 2.Filtering
+### 3.Searching
+### 4.Sorting
